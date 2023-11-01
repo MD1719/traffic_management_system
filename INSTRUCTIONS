@@ -1,0 +1,28 @@
+Hardware Simulation in Wokwi:
+1.Visit the Wokwi website.
+2.Create an account on Wokwi if you don't have one.
+3.Once logged in, click on the "Create a New Simulation" button.
+4.In the "Create New Simulation" dialog:
+5.Select "Arduino"/"ESP32" as the board type.
+6.Give your simulation a name and choose an appropriate category.
+7.Click the "Create Simulation" button.
+8.In the Wokwi editor, you'll see an empty Arduino sketch. Replace the content with your provided Arduino/ESP32 code.
+9.In the Wokwi editor, you can simulate the hardware. Connect virtual wires to simulate the connections between the components (ultrasonic sensors, LEDs, etc.). Configure the hardware components according to the pin assignments in your code.
+10.To upload the code to the virtual Arduino board, click the "Upload" button. The code will be compiled and uploaded to the virtual board.
+11.You can then run the simulation by clicking the "Start Simulation" button.
+
+Setting Up Beeceptor:
+1.Go to the Beeceptor website.
+2.Create a Beeceptor account if you don't have one.
+3.After logging in, click the "Create Endpoint" button.
+4.Configure your endpoint by providing a name and other options. The endpoint URL will be something like https://your-endpoint-name.free.beeceptor.com. Make a note of this URL; you'll need it in your code.
+
+MIT App Inventor Integration:
+1.In your MIT App Inventor project, create a new project or open an existing one.
+2.To communicate with your Arduino/ESP32 code, use the Web component. Drag and drop a Web component from the palette into your design.
+3.Set up the Web component with the following properties:
+4.Url: Use the Beeceptor endpoint URL you created earlier (e.g., https://your-endpoint-name.free.beeceptor.com).
+5.RequestHeaders: Set the content type header to "application/x-www-form-urlencoded."
+6.In your App Inventor blocks, use the Web component to make HTTP POST requests to the Beeceptor endpoint. You can use the PostText or PostTextWithEncoding method to send data to your Arduino/ESP32.
+7.The Arduino code will receive the data from the MIT App Inventor app via Beeceptor and respond accordingly. Be sure to handle the incoming data on the Arduino side to control the traffic lights and send back the appropriate response to the app.
+8.Test your MIT App Inventor app by running it in the emulator or on a physical device, making sure it communicates with your Arduino code via Beeceptor.
