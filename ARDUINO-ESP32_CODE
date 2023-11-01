@@ -1,0 +1,185 @@
+#include <WiFi.h>      // Include the ESP32 WiFi library
+#include <HTTPClient.h>
+
+#define trigPinNorth 2     // Ultrasonic sensor trigger pin for North
+#define echoPinNorth 3     // Ultrasonic sensor echo pin for North
+#define redLEDNorth 5      // Red LED pin for North
+#define yellowLEDNorth 6   // Yellow LED pin for North
+#define greenLEDNorth 7    // Green LED pin for North
+
+#define trigPinEast 8      // Ultrasonic sensor trigger pin for East
+#define echoPinEast 9      // Ultrasonic sensor echo pin for East
+#define redLEDEast 10      // Red LED pin for East
+#define yellowLEDEast 11   // Yellow LED pin for East
+#define greenLEDEast 12    // Green LED pin for East
+
+#define trigPinSouth 13    // Ultrasonic sensor trigger pin for South
+#define echoPinSouth 14    // Ultrasonic sensor echo pin for South
+#define redLEDSouth 15     // Red LED pin for South
+#define yellowLEDSouth 16  // Yellow LED pin for South
+#define greenLEDSouth 17   // Green LED pin for South
+
+#define trigPinWest 18     // Ultrasonic sensor trigger pin for West
+#define echoPinWest 19     // Ultrasonic sensor echo pin for West
+#define redLEDWest 20      // Red LED pin for West
+#define yellowLEDWest 21   // Yellow LED pin for West
+#define greenLEDWest 33   // Green LED pin for West
+
+const char* ssid = "your-ssid";       // Replace with your WiFi network name
+const char* password = "your-password";  // Replace with your WiFi password
+
+const char* beeceptorEndpoint = "https://trfmng.free.beeceptor.com";  // Replace with your Beeceptor endpoint URL
+
+int trafficDensityNorth = 0;
+int trafficDensityEast = 0;
+int trafficDensitySouth = 0;
+int trafficDensityWest = 0;
+
+void setup() {
+  Serial.begin(9600);
+
+  // Initialize Ultrasonic sensors
+  pinMode(trigPinNorth, OUTPUT);
+  pinMode(echoPinNorth, INPUT);
+  pinMode(trigPinEast, OUTPUT);
+  pinMode(echoPinEast, INPUT);
+  pinMode(trigPinSouth, OUTPUT);
+  pinMode(echoPinSouth, INPUT);
+  pinMode(trigPinWest, OUTPUT);
+  pinMode(echoPinWest, INPUT);
+
+  // Initialize traffic lights
+  pinMode(redLEDNorth, OUTPUT);
+  pinMode(yellowLEDNorth, OUTPUT);
+  pinMode(greenLEDNorth, OUTPUT);
+  pinMode(redLEDEast, OUTPUT);
+  pinMode(yellowLEDEast, OUTPUT);
+  pinMode(greenLEDEast, OUTPUT);
+  pinMode(redLEDSouth, OUTPUT);
+  pinMode(yellowLEDSouth, OUTPUT);
+  pinMode(greenLEDSouth, OUTPUT);
+  pinMode(redLEDWest, OUTPUT);
+  pinMode(yellowLEDWest, OUTPUT);
+  pinMode(greenLEDWest, OUTPUT);
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi");
+
+  // Initialize with the red lights on for all directions
+  digitalWrite(redLEDNorth, HIGH);
+  digitalWrite(redLEDEast, HIGH);
+  digitalWrite(redLEDSouth, HIGH);
+  digitalWrite(redLEDWest, HIGH);
+}
+
+void loop() {
+  long durationNorth, durationEast, durationSouth, durationWest;
+  long distanceNorth, distanceEast, distanceSouth, distanceWest;
+
+  // Measure distances for all four directions
+  durationNorth = measureDistance(trigPinNorth, echoPinNorth);
+  durationEast = measureDistance(trigPinEast, echoPinEast);
+  durationSouth = measureDistance(trigPinSouth, echoPinSouth);
+  durationWest = measureDistance(trigPinWest, echoPinWest);
+
+  // Calculate distances in centimeters
+  distanceNorth = (durationNorth / 2) / 29.1;
+  distanceEast = (durationEast / 2) / 29.1;
+  distanceSouth = (durationSouth / 2) / 29.1;
+  distanceWest = (durationWest / 2) / 29.1;
+
+  // Simulate traffic density based on the distances measured
+  simulateTrafficDensity(distanceNorth, trafficDensityNorth);
+  simulateTrafficDensity(distanceEast, trafficDensityEast);
+  simulateTrafficDensity(distanceSouth, trafficDensitySouth);
+  simulateTrafficDensity(distanceWest, trafficDensityWest);
+
+  // Control traffic lights based on traffic density for all four directions
+  controlTrafficLights(trafficDensityNorth, redLEDNorth, yellowLEDNorth, greenLEDNorth);
+  controlTrafficLights(trafficDensityEast, redLEDEast, yellowLEDEast, greenLEDEast);
+  controlTrafficLights(trafficDensitySouth, redLEDSouth, yellowLEDSouth, greenLEDSouth);
+  controlTrafficLights(trafficDensityWest, redLEDWest, yellowLEDWest, greenLEDWest);
+
+  // Output the traffic densities and distances to the serial monitor (for debugging)
+  Serial.println("Traffic Density North: " + String(trafficDensityNorth));
+  Serial.println("Distance North: " + String(distanceNorth) + " cm");
+  Serial.println("Traffic Density East: " + String(trafficDensityEast));
+  Serial.println("Distance East: " + String(distanceEast) + " cm");
+  Serial.println("Traffic Density South: " + String(trafficDensitySouth));
+  Serial.println("Distance South: " + String(distanceSouth) + " cm");
+  Serial.println("Traffic Density West: " + String(trafficDensityWest));
+  Serial.println("Distance West: " + String(distanceWest) + " cm");
+
+  // Send data to Beeceptor for all four directions
+  sendDataToBeeceptor("North", trafficDensityNorth, distanceNorth);
+  sendDataToBeeceptor("East", trafficDensityEast, distanceEast);
+  sendDataToBeeceptor("South", trafficDensitySouth, distanceSouth);
+  sendDataToBeeceptor("West", trafficDensityWest, distanceWest);
+
+  delay(1000);  // Adjust the delay as needed for your specific application
+}
+
+long measureDistance(int trigPin, int echoPin) {
+  // Measure distance using an ultrasonic sensor
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  return pulseIn(echoPin, HIGH);
+}
+
+void simulateTrafficDensity(long distance, int &trafficDensity) {
+  // Simulate traffic density based on distance
+  if (distance < 20) {
+    trafficDensity = 3;  // High traffic density
+  } else if (distance < 50) {
+    trafficDensity = 2;  // Moderate traffic density
+  } else {
+    trafficDensity = 1;  // Low traffic density
+  }
+}
+
+void controlTrafficLights(int trafficDensity, int redLED, int yellowLED, int greenLED) {
+  // Control traffic lights based on traffic density
+  switch (trafficDensity) {
+    case 1:
+      digitalWrite(redLED, LOW);
+      digitalWrite(yellowLED, LOW);
+      digitalWrite(greenLED, HIGH);
+      break;
+    case 2:
+      digitalWrite(redLED, LOW);
+      digitalWrite(yellowLED, HIGH);
+      digitalWrite(greenLED, LOW);
+      break;
+    case 3:
+      digitalWrite(redLED, HIGH);
+      digitalWrite(yellowLED, LOW);
+      digitalWrite(greenLED, LOW);
+      break;
+  }
+}
+
+void sendDataToBeeceptor(String direction, int trafficDensity, long distance) {
+  // Create an HTTP client object
+  HTTPClient http;
+  http.begin(beeceptorEndpoint);
+
+  // Prepare the data to send to Beeceptor
+  String postData = "Direction: " + direction + ", Traffic Density: " + String(trafficDensity) + ", Distance: " + String(distance) + " cm";
+
+  // Make an HTTP POST request to Beeceptor
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  int httpResponseCode = http.POST(postData);
+
+  // Check the response code (for debugging)
+  Serial.println("HTTP Response Code for " + direction + ": " + httpResponseCode);
+
+  http.end();
+}
